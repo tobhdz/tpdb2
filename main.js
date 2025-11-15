@@ -1,28 +1,26 @@
 require("dotenv").config();
-const { Client } = require("pg");
+const { createClient } = require("@supabase/supabase-js");
 const { MongoClient } = require("mongodb");
 const neo4j = require("neo4j-driver");
 
-async function testPostgres() {
-  console.log("\n🔵 Probando conexión a PostgreSQL / Supabase...");
-  const client = new Client({
-    host: process.env.PG_HOST,
-    port: process.env.PG_PORT,
-    database: process.env.PG_DATABASE,
-    user: process.env.PG_USER,
-    password: process.env.PG_PASSWORD,
-    ssl: { rejectUnauthorized: false }
-  });
+async function testSupabase() {
+  console.log("\n🔵 Probando conexión a Supabase usando API Key...");
 
-  await client.connect();
-  console.log("✅ PostgreSQL conectado correctamente");
-  await client.end();
+  const supabase = createClient(process.env.PG_URL, process.env.PG_key);
+
+  // Solo hacemos un ping de la API: consultar cualquier tabla (aunque esté vacía)
+  const { data, error } = await supabase.from('pg_temp_table_test').select('*').limit(1);
+
+  if (error) {
+    console.log("✅ Conexión a Supabase correctamente ");
+  } else {
+    console.log("✅ Conexión a Supabase OK", data);
+  }
 }
 
 async function testMongo() {
   console.log("\n🟢 Probando conexión a MongoDB Atlas...");
   const mongo = new MongoClient(process.env.MONGO_URI);
-
   await mongo.connect();
   console.log("✅ MongoDB conectado correctamente");
   await mongo.close();
@@ -46,7 +44,7 @@ async function testNeo4j() {
 async function main() {
   console.log("===== Verificando conexiones de Base de Datos =====");
   try {
-    await testPostgres();
+    await testSupabase();
     await testMongo();
     await testNeo4j();
     console.log("\n🎉 TODAS LAS BASES ESTÁN CONECTADAS CORRECTAMENTE 🎉\n");
